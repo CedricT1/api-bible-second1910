@@ -227,6 +227,14 @@ def parse_reference(reference: str):
     
     return book, chapter, start_verse, end_verse
 
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    return HOME_PAGE
+
+@app.get("/bible", response_class=HTMLResponse)
+async def bible_home():
+    return HOME_PAGE
+
 @app.get("/bible/{reference}")
 async def get_bible_passage(reference: str):
     try:
