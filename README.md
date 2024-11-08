@@ -119,5 +119,5 @@ Les contributions sont les bienvenues ! N'hésitez pas à :
 
 Cédric Trachsel 
 
-Lien du projet: [https://github.com/votre-username/bible-api](https://github.com/votre-username/bible-api)
+Lien du projet: [https://github.com/CedricT1/api-bible-second1910](https://github.com/CedricT1/api-bible-second1910)
 
