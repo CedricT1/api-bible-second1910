@@ -210,8 +210,8 @@ HOME_PAGE = """
 """
 
 def parse_reference(reference: str):
-    """Parse une référence biblique du type 'jn_3:16' ou 'jn_3:16-20'"""
-    pattern = r"([1-3]?[a-z]+)_(\d+):(\d+)(?:-(\d+))?"
+    """Parse une référence biblique du type 'jn_3:16', 'jn_3:16-20' ou 'jn_3'"""
+    pattern = r"([1-3]?[a-z]+)_(\d+)(?::(\d+)(?:-(\d+))?)?"
     match = re.match(pattern, reference)
     if not match:
         raise HTTPException(status_code=400, detail="Format de référence invalide")
@@ -222,14 +222,10 @@ def parse_reference(reference: str):
     
     book = BOOK_MAPPING[book_abbr]
     chapter = int(match.group(2))
-    start_verse = int(match.group(3))
+    start_verse = int(match.group(3)) if match.group(3) else None
     end_verse = int(match.group(4)) if match.group(4) else start_verse
     
     return book, chapter, start_verse, end_verse
-
-@app.get("/", response_class=HTMLResponse)
-async def home():
-    return HOME_PAGE
 
 @app.get("/bible/{reference}")
 async def get_bible_passage(reference: str):
@@ -237,25 +233,37 @@ async def get_bible_passage(reference: str):
         book, chapter, start_verse, end_verse = parse_reference(reference)
         
         verses = []
-        for verse in range(start_verse, end_verse + 1):
-            ref = f"{book} {chapter}:{verse}"
-            verse_text = df[df['input_text'] == ref]['target_text'].iloc[0] if not df[df['input_text'] == ref].empty else None
-            if verse_text:
+        if start_verse is None:
+            # Si aucun verset n'est spécifié, récupérez tout le chapitre
+            chapter_verses = df[df['input_text'].str.startswith(f"{book} {chapter}:")]
+            for _, row in chapter_verses.iterrows():
+                ref = row['input_text']
                 verses.append({
                     "reference": ref,
-                    "text": verse_text
+                    "text": row['target_text']
                 })
+        else:
+            # Sinon, récupérez les versets spécifiés
+            for verse in range(start_verse, (end_verse or start_verse) + 1):
+                ref = f"{book} {chapter}:{verse}"
+                verse_text = df[df['input_text'] == ref]['target_text'].iloc[0] if not df[df['input_text'] == ref].empty else None
+                if verse_text:
+                    verses.append({
+                        "reference": ref,
+                        "text": verse_text
+                    })
         
         if not verses:
             return HTMLResponse(content=HOME_PAGE)
             
         return {
-            "reference": f"{book} {chapter}:{start_verse}-{end_verse}",
+            "reference": f"{book} {chapter}" if start_verse is None else f"{book} {chapter}:{start_verse}-{end_verse or start_verse}",
             "verses": verses
         }
         
     except Exception as e:
         return HTMLResponse(content=HOME_PAGE)
+
 
 if __name__ == "__main__":
     import uvicorn
