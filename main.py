@@ -238,16 +238,18 @@ async def get_bible_passage(reference: str):
             chapter_verses = df[df['input_text'].str.startswith(f"{book} {chapter}:")]
             for _, row in chapter_verses.iterrows():
                 ref = row['input_text']
+                verse_text = row['target_text'].strip().strip('"')  # Supprime les espaces et les guillemets au début et à la fin
                 verses.append({
                     "reference": ref,
-                    "text": row['target_text']
+                    "text": verse_text
                 })
         else:
             # Sinon, récupérez les versets spécifiés
             for verse in range(start_verse, (end_verse or start_verse) + 1):
                 ref = f"{book} {chapter}:{verse}"
-                verse_text = df[df['input_text'] == ref]['target_text'].iloc[0] if not df[df['input_text'] == ref].empty else None
-                if verse_text:
+                verse_row = df[df['input_text'] == ref]
+                if not verse_row.empty:
+                    verse_text = verse_row['target_text'].iloc[0].strip().strip('"')  # Supprime les espaces et les guillemets au début et à la fin
                     verses.append({
                         "reference": ref,
                         "text": verse_text
